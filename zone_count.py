@@ -11,13 +11,17 @@ screen_resolutions: tuple = (1920, 1080)
 output_path: Union[AnyStr, List[AnyStr]] = str()
 # zone_polygon = np.array([[700, 520], [1280, 520], [700, 960], [0, 520]])
 zone_polygon = np.array([[500, 520], [1280, 520], [1280, 1200], [500, 1200]])
+current_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+current_dt = datetime.strptime(current_dt, "%Y-%m-%d %H:%M:%S")
+today_date = f'{current_dt.day}-{current_dt.month}-{current_dt.year}'
+today_time = f'{current_dt.hour}-{current_dt.minute}-{current_dt.second}'
 
-if not os.path.exists("YOLOv8/Outputs"):
-    os.makedirs('YOLOv8/Outputs')
+if not os.path.exists(f"YOLOv8/Outputs/{today_date}"):
+    os.makedirs(f'YOLOv8/Outputs/{today_date}')
 else:
-    output_path = os.path.join(os.getcwd(), "YOLOv8", "Outputs", "Output.mp4")
+    output_path = os.path.join(os.getcwd(), "YOLOv8", "Outputs", f"{today_date}", f"Output_{today_time}.mp4")
 
-output_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), 20, (1920, 1080))
+output_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), 25, (1920, 1080))
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -34,9 +38,9 @@ def main():
     cap = cv2.VideoCapture(video_channel)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-    model = YOLO('yolov8x.pt')
+    model = YOLO('yolov8x-seg.pt')
 
-    box_annotator = sv.BoxAnnotator(thickness=3, text_thickness=2, text_scale=1)
+    box_annotator = sv.BoxAnnotator(thickness=2, text_thickness=2, text_scale=0.8)
 
     while True:
         ret, frame = cap.read()
