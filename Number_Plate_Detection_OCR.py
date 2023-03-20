@@ -11,18 +11,15 @@ all_labels = {0: u'license plate'}
 
 client = boto3.client('rekognition')
 
-video_scenes = np.random.choice([file for file in os.listdir(os.path.join(os.getcwd(), "Scene", "BusStopArm_Video"))][2:-1])
-# video = cv2.VideoCapture(r"D:\PyCharm-Projects-2\Scene\BusStopArm_Video\Scene_7\Cam_4.mp4")
-video = cv2.VideoCapture(r"C:\Users\ShrikantViswanathan\Videos\Singapore-LPR-Part-1.mp4")
+video = cv2.VideoCapture(r"C:\Users\ShrikantViswanathan\Downloads\ai-cam6-POEtestHome.mp4")
 
-output_path = os.path.join(os.getcwd(), "Output_Demo_Singapore.mp4")
+output_path = os.path.join(os.getcwd(), "Output_Demo.mp4")
 crop_img_path = os.path.join(os.getcwd(), "crop_plate_images")
-output_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), 20, (1920 // 2, 1080 // 2))
-while True:
-    ret, frame = video.read()
-    frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-    results = model.predict(frame, conf=0.5, agnostic_nms=True)
-    # print("results:::::::::::::::::",results)
+output_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), 20, (1920, 1080))
+
+
+def ocr_From_Img(results,frame):
+    # print(frame.shape)
     labels = []
     for r in results:
         for box in r.boxes.boxes:
@@ -37,26 +34,31 @@ while True:
 
             MAIN_TEXT = ""
             textDetections = response['TextDetections']
+            # print("textDetections:::", textDetections)
 
             for text in textDetections:
-                if text['Type'] == 'LINE':
+                if text['Type'] == 'LINE' and text['Confidence'] > 75:
                     MAIN_TEXT = MAIN_TEXT + " " + text['DetectedText']
+                    cv2.putText(frame, str(MAIN_TEXT), (x1-10, y1-10), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0,
+                                color=(0, 255, 255),thickness=2)
+                    cv2.rectangle(frame,(x1,y1),(w,h),color=(0,0,255),thickness=3)
             print("MAIN_TEXT", MAIN_TEXT)
-            # labels[0] = labels[0] + " - " + MAIN_TEXT
+            # labels[0] = labels[0] + " - " + MAIN_TEXTq
             labels.append(MAIN_TEXT)
             print("labels", labels)
-            cv2.imwrite("crop_plate_images/" + str(MAIN_TEXT) + ".jpg",cropped_image)
 
-        detections3 = sv.Detections.from_yolov8(r)
-        box_annotator = sv.BoxAnnotator(text_scale=0.8, text_thickness=2)
-        frame = box_annotator.annotate(scene=frame, detections=detections3, labels=labels)
+    return frame
+
+
+while True:
+    ret, frame = video.read()
+    frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+    # print('resized', frame.shape)
+    results = model.predict(frame, conf=0.5, agnostic_nms=True)
+
+    frame = ocr_From_Img(results,frame)
 
     cv2.imshow('detections', frame)
     output_writer.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         video.release()
-
-
-
-
-
